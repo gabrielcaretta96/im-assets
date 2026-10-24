@@ -1,0 +1,18 @@
+{
+ "id": "teste-sim-carrossel",
+ "destinos": {},
+ "simulacao": {
+  "instagram:carrossel": {
+   "ok": true,
+   "em": "2026-10-24T18:24:23.015724+00:00"
+  },
+  "facebook:fotos": {
+   "ok": true,
+   "em": "2026-10-24T18:24:29.003643+00:00"
+  },
+  "threads:post": {
+   "ok": true,
+   "em": "2026-10-24T18:25:11.462405+00:00"
+  }
+ }
+}
