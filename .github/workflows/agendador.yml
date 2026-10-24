@@ -1,0 +1,57 @@
+name: agendador
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+    inputs:
+      simular:
+        description: "1 = cria na Meta sem publicar"
+        default: "0"
+      post:
+        description: "id do post para simular (vazio = todos)"
+        default: ""
+  push:
+    paths:
+      - "engine/teste/simular-*"
+
+concurrency:
+  group: agendador
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install --quiet cryptography==44.0.2 requests==2.32.3
+      - name: Ciclo
+        env:
+          AGENDADOR_CHAVE: ${{ secrets.AGENDADOR_CHAVE }}
+          SIMULAR_PEDIDO: ${{ github.event.inputs.simular }}
+          SIMULAR_POST_PEDIDO: ${{ github.event.inputs.post }}
+        run: |
+          git config user.name "agendador"
+          git config user.email "agendador@users.noreply.github.com"
+          if [ -z "$AGENDADOR_CHAVE" ]; then echo "sem chave configurada; nada a fazer"; exit 0; fi
+          if [ -f config/tokens.enc ] || [ "$SIMULAR_PEDIDO" = "1" ]; then :; else echo "sem tokens; nada a fazer"; exit 0; fi
+          SIM="$SIMULAR_PEDIDO"; ALVO="$SIMULAR_POST_PEDIDO"
+          for f in engine/teste/simular-*; do
+            [ -f "$f" ] || continue
+            SIM=1; ALVO="$(cat "$f")"; git rm -q "$f"
+          done
+          mkdir -p engine/teste
+          SIMULAR="$SIM" SIMULAR_POST="$ALVO" python engine/agendador.py > /tmp/ciclo.log 2>&1 || echo "FALHA NO CICLO" >> /tmp/ciclo.log
+          cat /tmp/ciclo.log
+          if grep -qE "post |ERRO|FALHA|Traceback|renovado" /tmp/ciclo.log; then cp /tmp/ciclo.log "engine/teste/ultimo_ciclo.log"; fi
+          git add -A
+          git diff --cached --quiet || git commit -qm "log do ciclo"
+          git pull -q --rebase origin main || true
+          git push -q origin HEAD || true

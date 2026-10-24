@@ -1,1 +1,1 @@
-# im-assets
+assets
