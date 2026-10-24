@@ -1,2 +1,8 @@
-[18:22:03] config: Página Intent Motorsports | Instagram intentmotorsports
-[18:22:03] config: Threads intentmotorsports
+[18:23:42] post teste-sim-carrossel ['instagram:carrossel', 'facebook:fotos', 'threads:post']
+[18:24:23]   ok instagram:carrossel
+[18:24:29]   ok facebook:fotos
+[18:25:11]   ok threads:post
+[18:25:12] post teste-sim-reels ['instagram:reels', 'facebook:reels', 'threads:post']
+[18:25:48]   ok instagram:reels
+[18:25:54]   ok facebook:reels
+[18:26:26]   ok threads:post
