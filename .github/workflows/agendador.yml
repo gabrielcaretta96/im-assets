@@ -50,7 +50,7 @@ jobs:
           mkdir -p engine/teste
           SIMULAR="$SIM" SIMULAR_POST="$ALVO" python engine/agendador.py > /tmp/ciclo.log 2>&1 || echo "FALHA NO CICLO" >> /tmp/ciclo.log
           cat /tmp/ciclo.log
-          if grep -qE "post |ERRO|FALHA|Traceback|renovado" /tmp/ciclo.log; then cp /tmp/ciclo.log "engine/teste/ultimo_ciclo.log"; fi
+          if grep -qE "post |ERRO|FALHA|Traceback|renovado|config:" /tmp/ciclo.log; then cp /tmp/ciclo.log "engine/teste/ultimo_ciclo.log"; fi
           git add -A
           git diff --cached --quiet || git commit -qm "log do ciclo"
           git pull -q --rebase origin main || true

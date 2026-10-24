@@ -273,6 +273,35 @@ def renovar_threads(cfg):
     return True
 
 
+def completar_config(cfg):
+    """Primeira execução: a partir do token de usuário de longa duração, descobre a Página, o token
+    da Página (não expira), o Instagram ligado e o id do Threads. Devolve True se mudou algo."""
+    mudou = False
+    if cfg.get("user_token") and not cfg.get("page_token"):
+        contas = chamar("GET", f"{GRAPH}/me/accounts", params={
+            "fields": "id,name,access_token,instagram_business_account{id,username}",
+            "access_token": cfg["user_token"]}).get("data", [])
+        alvo = cfg.get("pagina_nome", "").lower()
+        escolhida = next((c for c in contas if alvo and alvo in c["name"].lower()), None) or \
+            next((c for c in contas if c.get("instagram_business_account")), None)
+        if not escolhida:
+            raise ErroAPI(f"nenhuma Página com Instagram ligado: {[c['name'] for c in contas]}")
+        cfg.update(page_token=escolhida["access_token"], fb_page_id=escolhida["id"],
+                   ig_user_id=escolhida["instagram_business_account"]["id"],
+                   ig_username=escolhida["instagram_business_account"].get("username"),
+                   pagina_nome=escolhida["name"])
+        cfg.pop("user_token")
+        log("config: Página", escolhida["name"], "| Instagram", cfg["ig_username"])
+        mudou = True
+    if cfg.get("threads_token") and not cfg.get("threads_user_id"):
+        eu = chamar("GET", f"{THREADS}/me", params={"fields": "id,username", "access_token": cfg["threads_token"]})
+        cfg["threads_user_id"], cfg["threads_username"] = eu["id"], eu.get("username")
+        cfg.setdefault("threads_expira", (agora() + dt.timedelta(days=58)).isoformat())
+        log("config: Threads", cfg["threads_username"])
+        mudou = True
+    return mudou
+
+
 REDES = {"instagram": instagram, "facebook": facebook, "threads": threads}
 
 
@@ -280,9 +309,16 @@ REDES = {"instagram": instagram, "facebook": facebook, "threads": threads}
 def ciclo():
     priv = os.environ["AGENDADOR_CHAVE"]
     cfg = ler_config(priv)
-    if not SIMULAR and renovar_threads(cfg):
+    if completar_config(cfg):
         salvar_config(cfg)
-        log("token do Threads renovado")
+        enviar_commit("config completada")
+    try:
+        if not SIMULAR and cfg.get("threads_token") and renovar_threads(cfg):
+            salvar_config(cfg)
+            enviar_commit("token do Threads renovado")
+            log("token do Threads renovado")
+    except Exception as e:  # noqa: BLE001
+        log("ERRO ao renovar token do Threads:", str(e)[:200])
 
     alvo = os.environ.get("SIMULAR_POST")
     vencidos = [p for p in ler_fila(priv)
