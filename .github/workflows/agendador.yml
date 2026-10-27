@@ -3,6 +3,8 @@ name: agendador
 on:
   schedule:
     - cron: "*/15 * * * *"
+    - cron: "40 20 * * *"   # 17h40 em SP: janela de prontidão para os posts da noite
+    - cron: "10 21 * * *"   # 18h10 em SP: reforço
   workflow_dispatch:
     inputs:
       simular:
