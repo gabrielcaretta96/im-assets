@@ -375,5 +375,34 @@ def ciclo():
         enviar_commit("batida diária")
 
 
+def proximo_pendente(priv):
+    """Horário do próximo post com algum destino pendente (ou None)."""
+    tempos = [p["_quando"] for p in ler_fila(priv)
+              if any(pendente(ler_estado(p["id"]), d) for d in p["destinos"])]
+    return min(tempos) if tempos else None
+
+
+def janela(horas):
+    """Fica de prontidão: roda o ciclo e espera o próximo post, até `horas` a partir de agora.
+    O cron do GitHub atrasa horas em repositório pouco ativo; assim o post sai na hora certa."""
+    priv = os.environ["AGENDADOR_CHAVE"]
+    fim = agora() + dt.timedelta(hours=horas)
+    while True:
+        git("pull", "-q", "--rebase", "origin", "main", check=False)
+        ciclo()
+        prox = proximo_pendente(priv)
+        if prox is None or prox > fim:
+            log("janela encerrada; próximo post:", prox.isoformat() if prox else "nenhum")
+            return
+        espera = (prox - agora()).total_seconds()
+        if espera > 0:
+            log("aguardando", prox.isoformat())
+        time.sleep(min(max(espera, 0), 60) if espera > 0 else 60)
+
+
 if __name__ == "__main__":
-    ciclo()
+    h = os.environ.get("JANELA_HORAS")
+    if h and not SIMULAR:
+        janela(float(h))
+    else:
+        ciclo()
