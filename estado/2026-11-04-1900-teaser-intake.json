@@ -1,0 +1,16 @@
+{
+ "id": "2026-11-04-1900-teaser-intake",
+ "destinos": {
+  "instagram:reels": {
+   "status": "erro",
+   "tentativas": 1,
+   "erro": "processamento falhou: ERROR",
+   "em": "2026-11-04T22:00:17.732602+00:00"
+  },
+  "facebook:reels": {
+   "status": "publicado",
+   "id": "1482326197296557",
+   "em": "2026-11-04T22:00:25.052320+00:00"
+  }
+ }
+}
